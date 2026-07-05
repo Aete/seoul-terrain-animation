@@ -47,4 +47,5 @@ optional re-add).
 
 Build in incremental, visually-verified steps; stop for a screenshot at each section end.
 Staged plan: `~/.claude/plans/seoul-ttareungi-contour-eager-patterson.md`.
-Status: section 0 (bootstrap) done; section 1 (mock data + adapter) in progress.
+Status: sections 0–4 done (bootstrap → data → heightmap → mask → contour terrain).
+Next: section 5 (GPU particles).

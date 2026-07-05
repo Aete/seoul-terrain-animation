@@ -6,6 +6,7 @@ Up: [`../CLAUDE.md`](../CLAUDE.md) · Project: [`../../CLAUDE.md`](../../CLAUDE.
 dataset's own fields. Dataset-specific mapping lives only in `sources/`.
 
 - `types.ts` — `GeoPoint { lng, lat, weight, weightByHour? }`, `DataSource`, `Bounds`, `Heightmap`.
+- `field.ts` — `computeHeightmap()`: full pipeline (KDE → mask → `Heightmap`). App imports this.
 - `sources/` — one adapter per dataset; `index.ts` is the registry (`SOURCES`, `DEFAULT_SOURCE`).
   - `ttareungi.ts` — mock CSV (`?raw` import) → maps `tripCount→weight`, `[h0..h23]→weightByHour`.
   - Add a dataset: write an adapter, append to `SOURCES`. Don't touch heightmap/layers.
