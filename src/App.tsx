@@ -8,8 +8,8 @@ import { computeHeightmap } from './data/field'
 import ContourTerrainLayer from './layers/ContourTerrainLayer'
 import type { GeoPoint } from './data/types'
 
-type Controls = { count: number; lineColor: string; peakColor: string }
-const DEFAULT_CONTROLS: Controls = { count: 16, lineColor: '#fbbf24', peakColor: '#7dd3fc' }
+type Controls = { count: number; height: number; lineColor: string; peakColor: string }
+const DEFAULT_CONTROLS: Controls = { count: 16, height: 4000, lineColor: '#fbbf24', peakColor: '#7dd3fc' }
 
 function hexToRgb(hex: string): [number, number, number] {
   const n = parseInt(hex.slice(1), 16)
@@ -37,6 +37,7 @@ function App() {
     const state = { ...DEFAULT_CONTROLS }
     const sync = () => setControls({ ...state })
     gui.add(state, 'count', 4, 40, 1).name('line count').onChange(sync)
+    gui.add(state, 'height', 0, 10000, 100).name('height').onChange(sync)
     gui.addColor(state, 'lineColor').name('line color').onChange(sync)
     gui.addColor(state, 'peakColor').name('peak color').onChange(sync)
     return () => gui.destroy()
@@ -56,6 +57,7 @@ function App() {
         id: 'terrain',
         heightmap,
         interval: 1 / controls.count,
+        heightScale: controls.height,
         lineColor: hexToRgb(controls.lineColor),
         peakColor: hexToRgb(controls.peakColor),
       }),
