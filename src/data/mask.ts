@@ -1,20 +1,11 @@
 import booleanPointInPolygon from '@turf/boolean-point-in-polygon'
 import { polygon } from '@turf/helpers'
-import type { Feature, MultiPolygon, Polygon } from 'geojson'
 import type { Bounds } from './types'
-// Real Seoul boundary: southkorea/seoul-maps, 25 자치구 polygons (통계청 2013).
-// Bundled at build time as a raw string (Vite ?raw), like the Ttareungi CSV.
-// See data/GEO_README.md.
-import seoulGeoRaw from '../../data/seoul_municipalities_geo_simple.json?raw'
-
-type PolyFeature = Feature<Polygon | MultiPolygon>
-const seoulFeatures = (
-  JSON.parse(seoulGeoRaw) as { features: PolyFeature[] }
-).features
+import { SEOUL_FEATURES } from './seoulGeo'
 
 /** Inside Seoul iff the point falls in any of the 25 자치구 polygons. */
 function inSeoul(lng: number, lat: number): boolean {
-  for (const f of seoulFeatures) {
+  for (const f of SEOUL_FEATURES) {
     if (booleanPointInPolygon([lng, lat], f)) return true
   }
   return false

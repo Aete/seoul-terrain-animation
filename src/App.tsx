@@ -6,6 +6,7 @@ import { INITIAL_VIEW_STATE } from './config'
 import { DEFAULT_SOURCE } from './data/sources'
 import { computeHeightmap } from './data/field'
 import ContourTerrainLayer from './layers/ContourTerrainLayer'
+import { seoulBoundaryLayer } from './layers/seoulBoundaryLayer'
 import type { GeoPoint } from './data/types'
 
 type Controls = { count: number; height: number; lineColor: string; peakColor: string }
@@ -51,8 +52,12 @@ function App() {
   )
 
   const layers = useMemo<Layer[]>(() => {
-    if (!heightmap) return []
+    // Seoul outline sits under the terrain so the city's shape is always visible,
+    // even before data loads or where the KDE field is flat.
+    const boundary = seoulBoundaryLayer()
+    if (!heightmap) return [boundary]
     return [
+      boundary,
       new ContourTerrainLayer({
         id: 'terrain',
         heightmap,
