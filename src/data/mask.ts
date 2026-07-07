@@ -1,29 +1,32 @@
 import booleanPointInPolygon from '@turf/boolean-point-in-polygon'
 import { polygon } from '@turf/helpers'
+import type { Feature, MultiPolygon, Polygon } from 'geojson'
 import type { Bounds } from './types'
+// Real Seoul boundary: southkorea/seoul-maps, 25 자치구 polygons (통계청 2013).
+// Bundled at build time as a raw string (Vite ?raw), like the Ttareungi CSV.
+// See data/GEO_README.md.
+import seoulGeoRaw from '../../data/seoul_municipalities_geo_simple.json?raw'
+
+type PolyFeature = Feature<Polygon | MultiPolygon>
+const seoulFeatures = (
+  JSON.parse(seoulGeoRaw) as { features: PolyFeature[] }
+).features
+
+/** Inside Seoul iff the point falls in any of the 25 자치구 polygons. */
+function inSeoul(lng: number, lat: number): boolean {
+  for (const f of seoulFeatures) {
+    if (booleanPointInPolygon([lng, lat], f)) return true
+  }
+  return false
+}
 
 /**
- * TEMPORARY approximate geometry. Replace with real GeoJSON later:
- *   - Seoul boundary: southkorea/seoul-maps (mapshaper-simplified)
- *   - Han river: OSM Overpass export
- * The mask machinery below is final; only these two rings are placeholders.
+ * TEMPORARY approximate Han river band. Replace with real GeoJSON later
+ * (OSM Overpass export). The Seoul boundary above is now real; only this
+ * river ring remains a placeholder.
+ *
+ * A rough band following the Han river W→E, then back E→W to close.
  */
-const SEOUL_RING: [number, number][] = [
-  [126.82, 37.51],
-  [126.83, 37.55],
-  [126.86, 37.6],
-  [126.93, 37.64],
-  [127.02, 37.66],
-  [127.1, 37.63],
-  [127.15, 37.57],
-  [127.14, 37.5],
-  [127.06, 37.45],
-  [126.97, 37.44],
-  [126.88, 37.47],
-  [126.82, 37.51],
-]
-
-/** A rough band following the Han river W→E, then back E→W to close. */
 const HAN_RIVER_RING: [number, number][] = [
   [126.8, 37.585],
   [126.87, 37.56],
@@ -42,7 +45,6 @@ const HAN_RIVER_RING: [number, number][] = [
   [126.8, 37.585],
 ]
 
-const seoulPoly = polygon([SEOUL_RING])
 const hanPoly = polygon([HAN_RIVER_RING])
 
 /**
@@ -60,9 +62,9 @@ export function buildMask(bounds: Bounds, gridSize = 200): Float32Array {
     const lat = minLat + ((r + 0.5) / gridSize) * spanLat
     for (let c = 0; c < gridSize; c++) {
       const lng = minLng + ((c + 0.5) / gridSize) * spanLng
-      const inSeoul = booleanPointInPolygon([lng, lat], seoulPoly)
-      const inRiver = inSeoul && booleanPointInPolygon([lng, lat], hanPoly)
-      mask[r * gridSize + c] = inSeoul && !inRiver ? 1 : 0
+      const kept = inSeoul(lng, lat)
+      const inRiver = kept && booleanPointInPolygon([lng, lat], hanPoly)
+      mask[r * gridSize + c] = kept && !inRiver ? 1 : 0
     }
   }
   return mask
