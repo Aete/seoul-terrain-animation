@@ -13,8 +13,10 @@ type Controls = { count: number; height: number; lineColor: string; peakColor: s
 const DEFAULT_CONTROLS: Controls = { count: 16, height: 4000, lineColor: '#fbbf24', peakColor: '#7dd3fc' }
 
 // KDE bandwidth (meters). Wide enough that the field covers ~all of Seoul with
-// relief instead of isolated peaks over flat ground; tune live via lil-gui.
-const DEFAULT_SIGMA = 1300
+// relief instead of isolated peaks over flat ground — at 1800m ~92% of in-Seoul
+// cells clear the contour floor and station-free edges stop reading as flat.
+// Tune live via lil-gui (higher = fuller coverage, softer peaks).
+const DEFAULT_SIGMA = 1800
 
 function hexToRgb(hex: string): [number, number, number] {
   const n = parseInt(hex.slice(1), 16)
