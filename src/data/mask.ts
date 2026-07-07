@@ -1,5 +1,4 @@
 import booleanPointInPolygon from '@turf/boolean-point-in-polygon'
-import { polygon } from '@turf/helpers'
 import type { Bounds } from './types'
 import { SEOUL_FEATURES } from './seoulGeo'
 
@@ -12,36 +11,14 @@ function inSeoul(lng: number, lat: number): boolean {
 }
 
 /**
- * TEMPORARY approximate Han river band. Replace with real GeoJSON later
- * (OSM Overpass export). The Seoul boundary above is now real; only this
- * river ring remains a placeholder.
+ * Rasterize "inside Seoul" onto a gridSize×gridSize grid. Returns 1 for kept
+ * cells, 0 for masked-out (outside the city). Row-major, same layout as the
+ * heightmap.
  *
- * A rough band following the Han river W→E, then back E→W to close.
- */
-const HAN_RIVER_RING: [number, number][] = [
-  [126.8, 37.585],
-  [126.87, 37.56],
-  [126.93, 37.53],
-  [126.97, 37.54],
-  [127.02, 37.53],
-  [127.08, 37.53],
-  [127.12, 37.54],
-  [127.12, 37.52],
-  [127.08, 37.512],
-  [127.02, 37.512],
-  [126.97, 37.52],
-  [126.93, 37.512],
-  [126.87, 37.542],
-  [126.8, 37.565],
-  [126.8, 37.585],
-]
-
-const hanPoly = polygon([HAN_RIVER_RING])
-
-/**
- * Rasterize "inside Seoul AND outside the Han river" onto a gridSize×gridSize grid.
- * Returns 1 for kept cells, 0 for masked-out. Row-major, same layout as the heightmap.
- * Runtime ~1–2s for 200×200; precompute to data/seoul_mask.bin before deploy.
+ * The Han river is intentionally NOT masked out — the KDE contour field flows
+ * across it, and the river is drawn separately as a flat overlay
+ * (layers/featureOverlays.ts). Runtime ~1–2s for 200×200; precompute to
+ * data/seoul_mask.bin before deploy.
  */
 export function buildMask(bounds: Bounds, gridSize = 200): Float32Array {
   const [minLng, minLat, maxLng, maxLat] = bounds
@@ -53,9 +30,7 @@ export function buildMask(bounds: Bounds, gridSize = 200): Float32Array {
     const lat = minLat + ((r + 0.5) / gridSize) * spanLat
     for (let c = 0; c < gridSize; c++) {
       const lng = minLng + ((c + 0.5) / gridSize) * spanLng
-      const kept = inSeoul(lng, lat)
-      const inRiver = kept && booleanPointInPolygon([lng, lat], hanPoly)
-      mask[r * gridSize + c] = kept && !inRiver ? 1 : 0
+      mask[r * gridSize + c] = inSeoul(lng, lat) ? 1 : 0
     }
   }
   return mask

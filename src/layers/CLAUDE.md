@@ -7,6 +7,10 @@ Renders a `Heightmap` (from `../data/field`) as a 3D contour surface.
 - `ContourTerrainLayer.ts` — `Layer` subclass. Builds a cell-centered grid mesh
   (LNGLAT), injects the heightmap as an **R32F texture** (WebGL2-only), draws it
   as one non-instanced `Model`. Colors/interval/scale are props → UBO.
+- `seoulBoundaryLayer.ts` — 25-자치구 outline as a flat `GeoJsonLayer` plate at z=0
+  (`depthTest:false`) under the terrain. Data from `../data/seoulGeo`.
+- `featureOverlays.ts` — `riverLayer()`/`parkLayer()`: flat z=0 `GeoJsonLayer`s fetched
+  from `public/geo/` (built by `scripts/prepareGeoFeatures.ts`). Same backdrop-plate role.
 - `terrainUniforms.ts` — std140 UBO shader module (`terrain.*`), shared by vs+fs.
 - `shaders/terrain.vs.glsl` — samples heightmap, displaces z by `heightScale`,
   `vMask = step(0, h)`, `project_position_to_clipspace`.
