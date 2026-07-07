@@ -6,10 +6,17 @@ import { INITIAL_VIEW_STATE } from './config'
 import { DEFAULT_SOURCE } from './data/sources'
 import { computeHeightmap } from './data/field'
 import ContourTerrainLayer from './layers/ContourTerrainLayer'
+import { seoulBoundaryLayer } from './layers/seoulBoundaryLayer'
 import type { GeoPoint } from './data/types'
 
 type Controls = { count: number; height: number; lineColor: string; peakColor: string }
 const DEFAULT_CONTROLS: Controls = { count: 16, height: 4000, lineColor: '#fbbf24', peakColor: '#7dd3fc' }
+
+// KDE bandwidth (meters). Wide enough that the field covers ~all of Seoul with
+// relief instead of isolated peaks over flat ground — at 1800m ~92% of in-Seoul
+// cells clear the contour floor and station-free edges stop reading as flat.
+// Tune live via lil-gui (higher = fuller coverage, softer peaks).
+const DEFAULT_SIGMA = 1800
 
 function hexToRgb(hex: string): [number, number, number] {
   const n = parseInt(hex.slice(1), 16)
@@ -20,6 +27,7 @@ function App() {
   const [viewState, setViewState] = useState<MapViewState>(INITIAL_VIEW_STATE)
   const [points, setPoints] = useState<GeoPoint[] | null>(null)
   const [controls, setControls] = useState<Controls>(DEFAULT_CONTROLS)
+  const [sigma, setSigma] = useState<number>(DEFAULT_SIGMA)
 
   useEffect(() => {
     let alive = true
@@ -34,25 +42,41 @@ function App() {
   // lil-gui panel — mirrors control values into React state so layers re-render.
   useEffect(() => {
     const gui = new GUI({ title: 'contours' })
-    const state = { ...DEFAULT_CONTROLS }
-    const sync = () => setControls({ ...state })
+    const state = { ...DEFAULT_CONTROLS, sigma: DEFAULT_SIGMA }
+    const sync = () =>
+      setControls({
+        count: state.count,
+        height: state.height,
+        lineColor: state.lineColor,
+        peakColor: state.peakColor,
+      })
     gui.add(state, 'count', 4, 40, 1).name('line count').onChange(sync)
     gui.add(state, 'height', 0, 10000, 100).name('height').onChange(sync)
+    // Separate from `controls` so dragging it re-runs the KDE, but color/count
+    // tweaks (which share `controls`) don't.
+    gui.add(state, 'sigma', 300, 2500, 50).name('KDE σ (m)').onChange(() => setSigma(state.sigma))
     gui.addColor(state, 'lineColor').name('line color').onChange(sync)
     gui.addColor(state, 'peakColor').name('peak color').onChange(sync)
     return () => gui.destroy()
   }, [])
 
-  // Heightmap only depends on data — keep it out of the controls memo so tweaking
-  // interval/colors doesn't re-run the (expensive) KDE + mask.
+  // Heightmap depends only on data + KDE bandwidth — keep it out of the controls
+  // memo so tweaking interval/colors doesn't re-run the (expensive) KDE + mask.
   const heightmap = useMemo(
-    () => (points ? computeHeightmap(points, DEFAULT_SOURCE.bounds, { hour: null }) : null),
-    [points],
+    () =>
+      points
+        ? computeHeightmap(points, DEFAULT_SOURCE.bounds, { hour: null, sigmaMeters: sigma })
+        : null,
+    [points, sigma],
   )
 
   const layers = useMemo<Layer[]>(() => {
-    if (!heightmap) return []
+    // Seoul outline sits under the terrain so the city's shape is always visible,
+    // even before data loads or where the KDE field is flat.
+    const boundary = seoulBoundaryLayer()
+    if (!heightmap) return [boundary]
     return [
+      boundary,
       new ContourTerrainLayer({
         id: 'terrain',
         heightmap,
