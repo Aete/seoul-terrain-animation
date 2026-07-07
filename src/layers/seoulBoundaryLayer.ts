@@ -2,8 +2,8 @@ import { GeoJsonLayer } from '@deck.gl/layers'
 import { SEOUL_BOUNDARY } from '../data/seoulGeo'
 
 export type SeoulBoundaryOptions = {
-  /** Outline color, RGB 0–255. */
-  lineColor?: [number, number, number]
+  /** Outline color, RGB or RGBA 0–255. */
+  lineColor?: [number, number, number] | [number, number, number, number]
   /** Faint plate fill, RGBA 0–255. */
   fillColor?: [number, number, number, number]
   lineWidth?: number
@@ -28,6 +28,7 @@ export function seoulBoundaryLayer({
     filled: true,
     getLineColor: lineColor,
     getFillColor: fillColor,
+    updateTriggers: { getLineColor: lineColor, getFillColor: fillColor },
     lineWidthUnits: 'pixels',
     getLineWidth: lineWidth,
     lineWidthMinPixels: 1,
